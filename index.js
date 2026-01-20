@@ -7,6 +7,14 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
+// Serve static files (The Game Client)
+app.use(express.static(__dirname));
+
+// Serve index.html explicitly for root
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
+
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
