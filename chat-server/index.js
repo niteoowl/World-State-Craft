@@ -1,0 +1,65 @@
+const { Client, GatewayIntentBits } = require('discord.js');
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+
+const client = new Client({
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+});
+
+// Configuration
+const TARGET_CHANNEL_ID = '1463044793923010675';
+const TOKEN = 'MTQ2MzA0Njc5OTQ0NjExNDMxNA.GXu9o1.VGKIwNFfLFAAMo7XajNl8Jp-Ff8uubxOHOMrUI';
+
+// Discord -> Client
+client.on('messageCreate', (msg) => {
+    if (msg.channelId === TARGET_CHANNEL_ID && !msg.author.bot) {
+        console.log(`Discord Message from ${msg.author.username}: ${msg.content}`);
+        io.emit('chatMessage', {
+            user: msg.author.username,
+            text: msg.content,
+            source: 'discord'
+        });
+    }
+});
+
+// Client -> Discord
+io.on('connection', (socket) => {
+    console.log('User connected');
+
+    socket.on('sendChat', async (data) => {
+        try {
+            // Broadcast to other web clients
+            io.emit('chatMessage', {
+                user: data.user,
+                text: data.text,
+                source: 'web'
+            });
+
+            // Send to Discord
+            const channel = await client.channels.fetch(TARGET_CHANNEL_ID);
+            if (channel) {
+                await channel.send(`**${data.user}**: ${data.text}`);
+            }
+        } catch (error) {
+            console.error('Error sending to Discord:', error);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected');
+    });
+});
+
+client.login(TOKEN);
+
+client.once('ready', () => {
+    console.log(`Logged in as ${client.user.tag}!`);
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

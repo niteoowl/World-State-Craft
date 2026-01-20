@@ -890,6 +890,125 @@
         </div>
     </div>
 
+    <!-- Chat System -->
+    <div class="chat-container collapsed" id="chat-container">
+        <div class="chat-header">
+            <span>Global Chat</span>
+            <button class="chat-toggle" id="chat-toggle-btn">💬</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages go here -->
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Type a message...">
+            <button id="chat-send-btn">Send</button>
+        </div>
+    </div>
+
+    <style>
+        .chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            height: 400px;
+            background: rgba(10, 10, 14, 0.95);
+            border: 1px solid var(--border-gold);
+            border-radius: 8px;
+            z-index: 9000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease, height 0.3s ease;
+        }
+
+        .chat-container.collapsed {
+            height: 40px;
+            width: 150px;
+            overflow: hidden;
+            transform: translateY(0);
+        }
+
+        .chat-header {
+            padding: 10px;
+            background: rgba(255, 215, 0, 0.1);
+            border-bottom: 1px solid var(--border-gold);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            color: var(--primary-gold);
+            cursor: pointer;
+        }
+
+        .chat-toggle {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+
+        .chat-message {
+            margin-bottom: 8px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .chat-time {
+            color: var(--text-muted);
+            font-size: 10px;
+            margin-right: 4px;
+        }
+
+        .chat-user {
+            font-weight: bold;
+            color: var(--accent-blue);
+            margin-right: 4px;
+        }
+
+        .chat-user.discord-user {
+            color: #7289da;
+        }
+
+        .chat-text {
+            color: var(--text-primary);
+        }
+
+        .chat-input-area {
+            padding: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 8px;
+        }
+
+        #chat-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px;
+            color: white;
+            border-radius: 4px;
+        }
+
+        #chat-send-btn {
+            background: var(--primary-gold);
+            border: none;
+            color: black;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+
     <!-- Game Scripts -->
     <script type="module">
         import CONFIG from './js/config.js';
@@ -901,6 +1020,7 @@
         import military from './js/military.js';
         import politics from './js/politics.js';
         import tech from './js/tech.js';
+        import chat from './js/chat.js'; // Import Chat System
 
         // Global game state
         window.game = {

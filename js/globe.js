@@ -406,24 +406,30 @@ class Globe {
         }
 
         // 2. Proximity check (fallback for small countries/borders)
-        // Search within ~200km radius (approx 2 degrees)
+        // Search within ~3 degrees radius
         let closestName = null;
-        let closestDist = 2.0;
+        let closestDist = 3.0;
 
         for (const [name, country] of this.countries) {
             // Check bounding box first for performance
             if (!this.isInBoundingBox(lat, lon, country.bbox, 3.0)) continue;
 
-            // Simplified distance check to polygon segments would be expensive,
-            // so we check distance to centroid if available, or just heuristic
-            // For now, let's relax the point-in-polygon by checking if it's "close enough"
-            // This is complex for complex polygons.
+            // Calculate approximate center from bbox
+            const centerLat = (country.bbox.minLat + country.bbox.maxLat) / 2;
+            const centerLon = (country.bbox.minLon + country.bbox.maxLon) / 2;
 
-            // Alternative: Check if we are close to any of the country's vertices?
-            // Too heavy.
+            // Simple Euclidean distance (approximation good enough for local picking)
+            const dLat = lat - centerLat;
+            const dLon = lon - centerLon;
+            const dist = Math.sqrt(dLat * dLat + dLon * dLon);
+
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestName = name;
+            }
         }
 
-        return null;
+        return closestName;
     }
 
     // Optimization: Compute Bbox on load
