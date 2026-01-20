@@ -12,8 +12,13 @@ const client = new Client({
 });
 
 // Configuration
-const TARGET_CHANNEL_ID = '1463044793923010675';
-const TOKEN = 'MTQ2MzA0Njc5OTQ0NjExNDMxNA.GXu9o1.VGKIwNFfLFAAMo7XajNl8Jp-Ff8uubxOHOMrUI';
+const TARGET_CHANNEL_ID = process.env.CHANNEL_ID || '1463044793923010675';
+const TOKEN = process.env.DISCORD_TOKEN;
+
+if (!TOKEN) {
+    console.error('Error: DISCORD_TOKEN is missing from environment variables.');
+    process.exit(1);
+}
 
 // Discord -> Client
 client.on('messageCreate', (msg) => {
