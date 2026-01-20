@@ -99,7 +99,7 @@ class Globe {
         );
 
         // Globe geometry
-        const geometry = new THREE.SphereGeometry(1, 64, 64);
+        const geometry = new THREE.SphereGeometry(1, 64, 64); // Reduced from 128 for performance
 
         // Globe material with realistic shading
         const material = new THREE.MeshPhongMaterial({

@@ -60,7 +60,9 @@ io.on('connection', (socket) => {
     });
 });
 
-client.login(TOKEN);
+// 기존: client.login('MTQ2MzA0N...'); 
+// 변경: (비밀번호 대신 'DISCORD_TOKEN'이라는 이름의 열쇠를 가져오라는 뜻)
+client.login(process.env.DISCORD_TOKEN);
 
 client.once('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);

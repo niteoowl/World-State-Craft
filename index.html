@@ -1072,39 +1072,45 @@
             }, 500);
         }
 
-        async function loadNations() {
-            try {
-                const nations = await nationManager.getAllNations();
-                for (const nation of nations) {
-                    // Track owned territories
-                    if (nation.claimed_territories) {
-                        nation.claimed_territories.forEach(t => window.game.ownedTerritories.add(t));
-                    }
-
-                    if (nation.territory_center) {
-                        window.game.globe.addNationMarker(
-                            nation.territory_center.lat,
-                            nation.territory_center.lon,
-                            nation.flag_url || 'https://via.placeholder.com/64x40/333/fff?text=Flag',
-                            nation.name,
-                            nation.id
-                        );
-
-                        // Highlight owned territory on globe
-                        const color = nationManager.getNationColor(nation);
+        async function loadNations(retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const nations = await nationManager.getAllNations();
+                    for (const nation of nations) {
+                        // Track owned territories
                         if (nation.claimed_territories) {
-                            nation.claimed_territories.forEach(territory => {
-                                window.game.globe.setCountryOwner(territory, nation.id, parseInt(color.replace('#', '0x')));
-                            });
+                            nation.claimed_territories.forEach(t => window.game.ownedTerritories.add(t));
+                        }
+
+                        if (nation.territory_center) {
+                            window.game.globe.addNationMarker(
+                                nation.territory_center.lat,
+                                nation.territory_center.lon,
+                                nation.flag_url || 'https://via.placeholder.com/64x40/333/fff?text=Flag',
+                                nation.name,
+                                nation.id
+                            );
+
+                            // Highlight owned territory on globe
+                            const color = nationManager.getNationColor(nation);
+                            if (nation.claimed_territories) {
+                                nation.claimed_territories.forEach(territory => {
+                                    window.game.globe.setCountryOwner(territory, nation.id, parseInt(color.replace('#', '0x')));
+                                });
+                            }
                         }
                     }
-                }
 
-                // Load world rankings
-                await loadWorldRankings();
-                await loadSecurityCouncil();
-            } catch (error) {
-                console.error('Failed to load nations:', error);
+                    // Load world rankings
+                    await loadWorldRankings();
+                    await loadSecurityCouncil();
+                    return; // Success, exit function
+
+                } catch (error) {
+                    console.warn(`Attempt ${i + 1} to load nations failed:`, error);
+                    if (i === retries - 1) throw error; // Throw on last attempt
+                    await new Promise(r => setTimeout(r, 1000)); // Wait 1s before retry
+                }
             }
         }
 
