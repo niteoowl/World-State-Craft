@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Login - World State Craft</title>
+    <meta name="description" content="Login or create an account for World State Craft">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/main.css">
+
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: radial-gradient(ellipse at center, #1a1f35 0%, #0a0e17 100%);
+            overflow: auto;
+            padding: 20px;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .login-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-gold);
+            border-radius: 20px;
+            padding: 32px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-logo {
+            display: block;
+            max-width: 240px;
+            margin: 0 auto 24px;
+        }
+
+        .login-title {
+            font-family: var(--font-display);
+            font-size: 22px;
+            font-weight: 600;
+            text-align: center;
+            color: var(--primary-gold);
+            margin-bottom: 6px;
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            font-size: 13px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            padding: 4px;
+            background: var(--bg-darker);
+            border-radius: 10px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: var(--font-display);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .tab.active {
+            background: var(--primary-gold);
+            color: #000;
+        }
+
+        .tab:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        .form-container {
+            display: none;
+        }
+
+        .form-container.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg-darker);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            font-family: var(--font-main);
+            font-size: 14px;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            margin-top: 20px;
+            background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%);
+            border: none;
+            border-radius: 10px;
+            font-family: var(--font-display);
+            font-size: 15px;
+            font-weight: 600;
+            color: #000;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(201, 162, 39, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            background: rgba(220, 53, 69, 0.15);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            border-radius: 8px;
+            color: var(--accent-red);
+            font-size: 12px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-8px);
+            }
+
+            75% {
+                transform: translateX(8px);
+            }
+        }
+
+        .success-message {
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            background: rgba(40, 167, 69, 0.15);
+            border: 1px solid rgba(40, 167, 69, 0.3);
+            border-radius: 8px;
+            color: var(--accent-green);
+            font-size: 12px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--primary-gold);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin-top: 2px;
+            accent-color: var(--primary-gold);
+        }
+
+        .checkbox-group label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            cursor: pointer;
+        }
+
+        .checkbox-group a {
+            color: var(--primary-gold);
+            text-decoration: none;
+        }
+
+        .password-hint {
+            margin-top: 6px;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        /* Stars background */
+        .stars {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 24px;
+            }
+
+            .login-logo {
+                max-width: 200px;
+            }
+
+            .login-title {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Stars Background -->
+    <div class="stars" id="stars"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <img src="images/wsc_logo.png" alt="World State Craft" class="login-logo">
+
+            <h1 class="login-title">Welcome, Commander</h1>
+            <p class="login-subtitle">Login to manage your nation or create a new empire</p>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" data-form="login">Login</button>
+                <button class="tab" data-form="signup">Sign Up</button>
+            </div>
+
+            <!-- Error/Success Messages -->
+            <div class="error-message" id="error-message"></div>
+            <div class="success-message" id="success-message"></div>
+
+            <!-- Login Form -->
+            <div class="form-container active" id="form-login">
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-email">Email Address</label>
+                        <input type="email" id="login-email" class="form-input" placeholder="you@example.com" required
+                            autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" class="form-input" placeholder="••••••••" required
+                            autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="submit-btn" id="login-btn">
+                        Enter the World
+                    </button>
+                </form>
+            </div>
+
+            <!-- Signup Form -->
+            <div class="form-container" id="form-signup">
+                <form id="signup-form">
+                    <div class="form-group">
+                        <label for="signup-email">Email Address</label>
+                        <input type="email" id="signup-email" class="form-input" placeholder="you@example.com" required
+                            autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password">Password</label>
+                        <input type="password" id="signup-password" class="form-input"
+                            placeholder="Create a strong password" required minlength="8" autocomplete="new-password">
+                        <div class="password-hint">At least 8 characters</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-confirm">Confirm Password</label>
+                        <input type="password" id="signup-confirm" class="form-input"
+                            placeholder="Confirm your password" required autocomplete="new-password">
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="terms" required>
+                        <label for="terms">
+                            I am 14+ years old and agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy
+                                Policy</a>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="signup-btn">
+                        Create Account
+                    </button>
+                </form>
+            </div>
+
+            <a href="index.html" class="back-link">← Back to World Map</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import auth from './js/auth.js';
+
+        // Generate stars
+        function generateStars() {
+            const container = document.getElementById('stars');
+            for (let i = 0; i < 80; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                star.style.width = (Math.random() * 2 + 1) + 'px';
+                star.style.height = star.style.width;
+                container.appendChild(star);
+            }
+        }
+        generateStars();
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.form-container').forEach(f => f.classList.remove('active'));
+
+                tab.classList.add('active');
+                document.getElementById(`form-${tab.dataset.form}`).classList.add('active');
+
+                hideMessages();
+            });
+        });
+
+        function showError(message) {
+            const el = document.getElementById('error-message');
+            el.textContent = message;
+            el.classList.add('show');
+            document.getElementById('success-message').classList.remove('show');
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('success-message');
+            el.textContent = message;
+            el.classList.add('show');
+            document.getElementById('error-message').classList.remove('show');
+        }
+
+        function hideMessages() {
+            document.getElementById('error-message').classList.remove('show');
+            document.getElementById('success-message').classList.remove('show');
+        }
+
+        function setLoading(btn, loading) {
+            btn.disabled = loading;
+            if (loading) {
+                btn.dataset.originalText = btn.textContent;
+                btn.textContent = 'Please wait...';
+            } else if (btn.dataset.originalText) {
+                btn.textContent = btn.dataset.originalText;
+            }
+        }
+
+        // Login form
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('login-btn');
+
+            setLoading(btn, true);
+
+            try {
+                await auth.signIn(email, password);
+                showSuccess('Login successful! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 800);
+            } catch (error) {
+                showError(error.message || 'Login failed. Please check your credentials.');
+                setLoading(btn, false);
+            }
+        });
+
+        // Signup form
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirm = document.getElementById('signup-confirm').value;
+            const terms = document.getElementById('terms').checked;
+            const btn = document.getElementById('signup-btn');
+
+            if (password !== confirm) {
+                showError('Passwords do not match');
+                return;
+            }
+
+            if (password.length < 8) {
+                showError('Password must be at least 8 characters');
+                return;
+            }
+
+            if (!terms) {
+                showError('You must agree to the terms');
+                return;
+            }
+
+            setLoading(btn, true);
+
+            try {
+                const result = await auth.signUp(email, password);
+
+                // Check if we got a session (auto-login worked)
+                if (result?.session) {
+                    showSuccess('Account created! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 800);
+                } else {
+                    // Fallback: signup successful but no auto-login
+                    showSuccess('Account created! You can now login.');
+                    setTimeout(() => {
+                        document.querySelector('[data-form="login"]').click();
+                        setLoading(btn, false);
+                    }, 1500);
+                }
+            } catch (error) {
+                showError(error.message || 'Signup failed. Please try again.');
+                setLoading(btn, false);
+            }
+        });
+
+        // Check if already logged in
+        setTimeout(async () => {
+            if (auth.isLoggedIn()) {
+                window.location.href = 'index.html';
+            }
+        }, 300);
+    </script>
+</body>
+
+</html>

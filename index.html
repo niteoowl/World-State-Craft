@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>World State Craft - Geopolitical Simulation</title>
+    <meta name="description" content="World State Craft - 3D globe-based geopolitical simulation game">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/globe.css">
+
+    <style>
+        /* Mobile-first responsive design */
+        :root {
+            --nav-height: 60px;
+            --sidebar-width: 280px;
+        }
+
+        .modal-overlay.territory-selection-mode {
+            background: transparent !important;
+            pointer-events: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
+        /* Notification styles */
+        .notification {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            min-width: 280px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification-success {
+            border-color: var(--accent-green);
+        }
+
+        .notification-error {
+            border-color: var(--accent-red);
+        }
+
+        .notification-warning {
+            border-color: #f59e0b;
+        }
+
+        /* Wizard styles - Territory selection mode */
+        .wizard-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .wizard-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+
+        .wizard-step.active {
+            opacity: 1;
+        }
+
+        .wizard-step.completed {
+            opacity: 0.7;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 2px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .wizard-step.active .step-number {
+            border-color: var(--primary-gold);
+            color: var(--primary-gold);
+        }
+
+        .wizard-step.completed .step-number {
+            background: var(--primary-gold);
+            color: #000;
+            border-color: var(--primary-gold);
+        }
+
+        .step-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .wizard-page {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .wizard-page.active {
+            display: block;
+        }
+
+        .flag-upload {
+            margin-top: 8px;
+        }
+
+        .flag-preview {
+            width: 180px;
+            height: 100px;
+            background: var(--bg-darker);
+            border: 2px dashed var(--border-subtle);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+
+        .flag-preview:hover {
+            border-color: var(--primary-gold);
+        }
+
+        .flag-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .flag-preview span {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* Territory selection - Minimized modal mode */
+        .territory-selection-mode .modal {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 400px;
+            width: 90%;
+            max-height: 200px;
+            background: var(--bg-panel);
+            border: 2px solid var(--primary-gold);
+            border-radius: 16px;
+            z-index: 500;
+            pointer-events: auto;
+        }
+
+        .territory-selection-mode .modal-overlay {
+            background: transparent;
+            pointer-events: none;
+        }
+
+        .selected-territory {
+            padding: 16px;
+            background: var(--bg-darker);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .selected-territory.has-selection {
+            border-color: var(--primary-gold);
+            background: rgba(201, 162, 39, 0.1);
+        }
+
+        .selected-territory .territory-name {
+            font-family: var(--font-display);
+            font-size: 18px;
+            color: var(--primary-gold);
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 70px;
+            padding: 10px;
+            background: var(--bg-darker);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-gold);
+        }
+
+        .stat-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* Action buttons in panels */
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 14px 10px;
+            background: var(--bg-darker);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .action-btn:hover {
+            border-color: var(--primary-gold);
+            background: rgba(201, 162, 39, 0.1);
+        }
+
+        .action-btn-icon {
+            font-size: 22px;
+            margin-bottom: 6px;
+        }
+
+        .action-btn-label {
+            font-size: 11px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* MOBILE BOTTOM NAVIGATION */
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--nav-height);
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border-gold);
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+        }
+
+        .mobile-nav-inner {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .mobile-nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 16px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mobile-nav-btn.active {
+            color: var(--primary-gold);
+        }
+
+        .mobile-nav-btn .nav-icon {
+            font-size: 22px;
+        }
+
+        .mobile-nav-btn .nav-label {
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        /* Desktop sidebar hidden on mobile */
+        @media (max-width: 768px) {
+            .sidebar-left {
+                display: none !important;
+            }
+
+            .mobile-nav {
+                display: block;
+            }
+
+            #globe-container {
+                padding-bottom: var(--nav-height);
+            }
+
+            .hud-top {
+                padding: 8px 12px;
+            }
+
+            .hud-resources {
+                gap: 8px;
+            }
+
+            .resource-item {
+                padding: 6px 10px;
+            }
+
+            .resource-value {
+                font-size: 14px;
+            }
+
+            .resource-name {
+                font-size: 8px;
+            }
+
+            .panel-right {
+                width: calc(100% - 20px);
+                left: 10px;
+                right: 10px;
+                top: auto;
+                bottom: calc(var(--nav-height) + 10px);
+                max-height: 60vh;
+            }
+
+            .globe-controls {
+                bottom: calc(var(--nav-height) + 16px);
+            }
+        }
+
+        /* Desktop: show sidebar, hide mobile nav */
+        @media (min-width: 769px) {
+            .mobile-nav {
+                display: none !important;
+            }
+
+            .sidebar-left {
+                display: flex !important;
+            }
+        }
+
+        /* International Politics Panel Styles */
+        .politics-section {
+            margin-bottom: 20px;
+        }
+
+        .politics-section h4 {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .alliance-card,
+        .treaty-card {
+            padding: 12px;
+            background: var(--bg-darker);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .alliance-card:hover,
+        .treaty-card:hover {
+            border-color: var(--primary-gold);
+        }
+
+        .nation-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: var(--bg-darker);
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+
+        .nation-row img {
+            width: 28px;
+            height: 18px;
+            border-radius: 3px;
+            object-fit: cover;
+        }
+
+        .nation-row .nation-name {
+            flex: 1;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .nation-row .nation-power {
+            font-family: var(--font-display);
+            font-size: 12px;
+            color: var(--primary-gold);
+        }
+
+        /* Diplomacy action buttons */
+        .diplomacy-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .diplomacy-btn {
+            padding: 10px 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            font-size: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .diplomacy-btn:hover {
+            border-color: var(--primary-gold);
+        }
+
+        .diplomacy-btn.danger {
+            border-color: rgba(220, 53, 69, 0.3);
+        }
+
+        .diplomacy-btn.danger:hover {
+            border-color: var(--accent-red);
+            background: rgba(220, 53, 69, 0.1);
+        }
+
+        /* Quick stats in header */
+        .quick-stats {
+            display: flex;
+            gap: 12px;
+            margin-left: auto;
+            align-items: center;
+        }
+
+        .user-info {
+            padding: 6px 14px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <img src="images/wsc_logo.png" alt="World State Craft" class="loading-logo">
+        <div class="loading-bar">
+            <div class="loading-progress"></div>
+        </div>
+        <p class="loading-text">Initializing World...</p>
+    </div>
+
+    <!-- Main Game Container -->
+    <div class="game-container">
+        <!-- Left Sidebar (Desktop only) -->
+        <aside class="sidebar-left">
+            <div class="sidebar-logo">
+                <img src="images/wsc_logo.png" alt="World State Craft">
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-panel="map">
+                    <img src="images/swc_map.png" alt="Map">
+                </button>
+                <button class="nav-btn" data-panel="military">
+                    <img src="images/swc_military.png" alt="Military">
+                </button>
+                <button class="nav-btn" data-panel="politics">
+                    <img src="images/swc_politics.png" alt="Politics">
+                </button>
+                <button class="nav-btn" data-panel="tech">
+                    <img src="images/swc_tech.png" alt="Tech">
+                </button>
+            </nav>
+
+            <div class="sidebar-nation" id="nation-info" style="display: none;">
+                <div class="nation-info">
+                    <img src="" alt="Flag" class="nation-flag" id="my-flag">
+                    <div class="nation-details">
+                        <h3 id="my-nation-name">-</h3>
+                        <p id="my-nation-system">-</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Globe Container -->
+        <main id="globe-container">
+            <!-- Top HUD -->
+            <div class="hud-top">
+                <div class="server-indicator"
+                    style="position: absolute; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--text-muted); opacity: 0.7; border: 1px solid var(--border-subtle); padding: 2px 8px; border-radius: 10px; background: rgba(0,0,0,0.3);">
+                    Server: Earth 1
+                </div>
+                <div class="hud-resources" id="hud-resources" style="display: none;">
+                    <div class="resource-item" data-resource="treasury">
+                        <span class="resource-icon">💰</span>
+                        <div>
+                            <div class="resource-value" id="res-treasury">0</div>
+                            <div class="resource-name">Treasury</div>
+                        </div>
+                    </div>
+                    <div class="resource-item" data-resource="oil">
+                        <span class="resource-icon">🛢️</span>
+                        <div>
+                            <div class="resource-value" id="res-oil">0</div>
+                            <div class="resource-name">Oil</div>
+                        </div>
+                    </div>
+                    <div class="resource-item" data-resource="minerals">
+                        <span class="resource-icon">⛏️</span>
+                        <div>
+                            <div class="resource-value" id="res-minerals">0</div>
+                            <div class="resource-name">Minerals</div>
+                        </div>
+                    </div>
+                    <div class="resource-item" data-resource="food">
+                        <span class="resource-icon">🌾</span>
+                        <div>
+                            <div class="resource-value" id="res-food">0</div>
+                            <div class="resource-name">Food</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quick-stats" id="quick-stats">
+                    <button class="btn btn-primary" id="btn-login" onclick="location.href='login.html'">
+                        Login / Sign Up
+                    </button>
+                </div>
+            </div>
+
+            <!-- Globe will be rendered here -->
+
+            <!-- Territory Tooltip (only shows for owned territories) -->
+            <div class="territory-tooltip" id="territory-tooltip"></div>
+
+            <!-- Globe Controls -->
+            <div class="globe-controls">
+                <button class="globe-control-btn" id="btn-zoom-in" title="Zoom In">+</button>
+                <button class="globe-control-btn" id="btn-zoom-out" title="Zoom Out">−</button>
+                <button class="globe-control-btn" id="btn-reset-view" title="Reset View">🌍</button>
+            </div>
+        </main>
+
+        <!-- Right Panel: Military -->
+        <div class="panel-right" id="panel-military">
+            <div class="panel-header">
+                <h2>🪖 Military</h2>
+                <button class="panel-close">✕</button>
+            </div>
+            <div class="panel-content">
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <div class="stat-value" id="mil-power">0</div>
+                        <div class="stat-label">Power</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="mil-units">0</div>
+                        <div class="stat-label">Units</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="mil-attacks">0</div>
+                        <div class="stat-label">Attacks</div>
+                    </div>
+                </div>
+
+                <div class="politics-section" style="margin-top: 16px;">
+                    <h4>Train Units</h4>
+                    <div class="action-grid" id="unit-actions">
+                        <button class="action-btn" data-unit="infantry">
+                            <div class="action-btn-icon">🪖</div>
+                            <div class="action-btn-label">Infantry</div>
+                        </button>
+                        <button class="action-btn" data-unit="tank">
+                            <div class="action-btn-icon">🛡️</div>
+                            <div class="action-btn-label">Tank</div>
+                        </button>
+                        <button class="action-btn" data-unit="aircraft">
+                            <div class="action-btn-icon">✈️</div>
+                            <div class="action-btn-label">Aircraft</div>
+                        </button>
+                        <button class="action-btn" data-unit="navy">
+                            <div class="action-btn-icon">🚢</div>
+                            <div class="action-btn-label">Navy</div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="politics-section">
+                    <h4>Active Operations</h4>
+                    <div id="active-attacks">
+                        <p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 16px;">
+                            No active military operations
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: International Politics (ENHANCED) -->
+        <div class="panel-right" id="panel-politics">
+            <div class="panel-header">
+                <h2>🏛️ International Politics</h2>
+                <button class="panel-close">✕</button>
+            </div>
+            <div class="panel-content">
+                <!-- Security Council -->
+                <div class="politics-section">
+                    <h4>🔒 Security Council (Top 5)</h4>
+                    <div id="security-council">
+                        <p style="color: var(--text-muted); font-size: 12px; text-align: center;">Loading...</p>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="politics-section">
+                    <h4>⚡ Diplomatic Actions</h4>
+                    <div class="action-grid">
+                        <button class="action-btn" id="btn-world-assembly">
+                            <div class="action-btn-icon">🌐</div>
+                            <div class="action-btn-label">World Assembly</div>
+                        </button>
+                        <button class="action-btn" id="btn-propose-treaty">
+                            <div class="action-btn-icon">📜</div>
+                            <div class="action-btn-label">Propose Treaty</div>
+                        </button>
+                        <button class="action-btn" id="btn-trade-offer">
+                            <div class="action-btn-icon">💱</div>
+                            <div class="action-btn-label">Trade Offer</div>
+                        </button>
+                        <button class="action-btn" id="btn-sanctions">
+                            <div class="action-btn-icon">⛔</div>
+                            <div class="action-btn-label">Sanctions</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Treaties -->
+                <div class="politics-section">
+                    <h4>📜 Active Treaties</h4>
+                    <div id="active-treaties">
+                        <p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 16px;">
+                            No active treaties
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Alliances -->
+                <div class="politics-section">
+                    <h4>🤝 Alliances</h4>
+                    <div id="alliances-list">
+                        <p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 16px;">
+                            Not in any alliance
+                        </p>
+                    </div>
+                </div>
+
+                <!-- World Rankings -->
+                <div class="politics-section">
+                    <h4>🏆 World Rankings</h4>
+                    <div id="world-rankings">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Technology -->
+        <div class="panel-right" id="panel-tech">
+            <div class="panel-header">
+                <h2>🔬 Technology</h2>
+                <button class="panel-close">✕</button>
+            </div>
+            <div class="panel-content">
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <div class="stat-value" id="tech-researching">-</div>
+                        <div class="stat-label">Researching</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="tech-completed">0</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                </div>
+
+                <div class="politics-section" style="margin-top: 16px;">
+                    <h4>Tier 1: Basic Industry</h4>
+                    <div class="action-grid" id="tech-tier-1">
+                        <button class="action-btn" data-tech="mining">
+                            <div class="action-btn-icon">⛏️</div>
+                            <div class="action-btn-label">Mining</div>
+                        </button>
+                        <button class="action-btn" data-tech="agriculture">
+                            <div class="action-btn-icon">🌾</div>
+                            <div class="action-btn-label">Agriculture</div>
+                        </button>
+                        <button class="action-btn" data-tech="basic_military">
+                            <div class="action-btn-icon">⚔️</div>
+                            <div class="action-btn-label">Military</div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="politics-section">
+                    <h4>Tier 2: Information Age</h4>
+                    <div class="action-grid" id="tech-tier-2">
+                        <button class="action-btn" data-tech="espionage">
+                            <div class="action-btn-icon">🕵️</div>
+                            <div class="action-btn-label">Espionage</div>
+                        </button>
+                        <button class="action-btn" data-tech="missiles">
+                            <div class="action-btn-icon">🚀</div>
+                            <div class="action-btn-label">Missiles</div>
+                        </button>
+                        <button class="action-btn" data-tech="economic_data">
+                            <div class="action-btn-icon">📊</div>
+                            <div class="action-btn-label">Economics</div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="politics-section">
+                    <h4>Tier 3: Quantum & Space</h4>
+                    <div class="action-grid" id="tech-tier-3">
+                        <button class="action-btn" data-tech="nuclear">
+                            <div class="action-btn-icon">☢️</div>
+                            <div class="action-btn-label">Nuclear</div>
+                        </button>
+                        <button class="action-btn" data-tech="satellite_defense">
+                            <div class="action-btn-icon">🛰️</div>
+                            <div class="action-btn-label">Satellites</div>
+                        </button>
+                        <button class="action-btn" data-tech="ai_bureaucracy">
+                            <div class="action-btn-icon">🤖</div>
+                            <div class="action-btn-label">AI Gov</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-nav">
+        <div class="mobile-nav-inner">
+            <button class="mobile-nav-btn active" data-panel="map">
+                <span class="nav-icon">🌍</span>
+                <span class="nav-label">Map</span>
+            </button>
+            <button class="mobile-nav-btn" data-panel="military">
+                <span class="nav-icon">⚔️</span>
+                <span class="nav-label">Military</span>
+            </button>
+            <button class="mobile-nav-btn" data-panel="politics">
+                <span class="nav-icon">🏛️</span>
+                <span class="nav-label">Politics</span>
+            </button>
+            <button class="mobile-nav-btn" data-panel="tech">
+                <span class="nav-icon">🔬</span>
+                <span class="nav-label">Tech</span>
+            </button>
+            <button class="mobile-nav-btn" data-panel="profile">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Profile</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Modal: Create Nation -->
+    <div class="modal-overlay" id="modal-create-nation">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>🏳️ Create Your Nation</h2>
+            </div>
+            <div class="modal-body" id="nation-wizard-content">
+                <!-- Wizard content injected here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="wizard-prev" style="display: none;">← Back</button>
+                <button class="btn btn-primary" id="wizard-next">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Nation Details -->
+    <div class="modal-overlay" id="modal-nation-details">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="detail-nation-name">Nation Name</h2>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <img src="" alt="Flag" id="detail-flag"
+                        style="width: 100px; height: 60px; border-radius: 6px; border: 2px solid var(--border-gold);">
+                </div>
+                <div class="stats-bar" id="detail-stats">
+                    <!-- Nation stats -->
+                </div>
+                <div class="diplomacy-actions" id="detail-actions">
+                    <!-- Diplomatic actions -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary"
+                    onclick="document.getElementById('modal-nation-details').classList.remove('active')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: World Assembly -->
+    <div class="modal-overlay" id="modal-world-assembly">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>🌐 World Assembly</h2>
+            </div>
+            <div class="modal-body">
+                <div class="politics-section">
+                    <h4>Active Resolutions</h4>
+                    <div id="resolutions-list">
+                        <p style="color: var(--text-muted); text-align: center;">No active resolutions</p>
+                    </div>
+                </div>
+                <button class="btn btn-primary" style="width: 100%; margin-top: 16px;" id="btn-propose-resolution">
+                    📝 Propose New Resolution
+                </button>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary"
+                    onclick="document.getElementById('modal-world-assembly').classList.remove('active')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Flag Selection -->
+    <div class="modal-overlay" id="modal-flag-selection" style="z-index: 2000;">
+        <div class="modal" style="max-width: 800px; height: 80vh;">
+            <div class="modal-header">
+                <h2>🏳️ Select National Flag</h2>
+            </div>
+            <div class="modal-body" id="flag-selector-content" style="padding: 0;">
+                <!-- Flag selector content injected here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary"
+                    onclick="document.getElementById('modal-flag-selection').classList.remove('active')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Scripts -->
+    <script type="module">
+        import CONFIG from './js/config.js';
+        import auth from './js/auth.js';
+        import Globe from './js/globe.js';
+        import ui from './js/ui.js';
+        import nationManager from './js/nation.js';
+        import economy from './js/economy.js';
+        import military from './js/military.js';
+        import politics from './js/politics.js';
+        import tech from './js/tech.js';
+
+        // Global game state
+        window.game = {
+            globe: null,
+            selectedCountry: null,
+            wizardStep: 1,
+            nationData: {},
+            ownedTerritories: new Set() // Track which countries are owned
+        };
+
+        // Initialize game
+        async function init() {
+            ui.setLoading(true, 'Connecting to servers...');
+            ui.setLoadingProgress(10);
+
+
+            // Wait for auth to initialize robustly
+            await auth.ensureReady();
+            ui.setLoadingProgress(30);
+
+            ui.setLoading(true, 'Loading 3D globe...');
+
+            // Initialize globe
+            window.game.globe = new Globe('globe-container');
+            ui.setLoadingProgress(60);
+
+            // Load all nations and place markers
+            ui.setLoading(true, 'Loading nations...');
+            try {
+                await loadNations();
+            } catch (err) {
+                console.error('Critical error loading nations:', err);
+            }
+            ui.setLoadingProgress(80);
+
+            // Check auth state
+            if (auth.isLoggedIn()) {
+                await handleLoggedIn();
+            }
+            ui.setLoadingProgress(100);
+
+            // Initialize UI
+            ui.init();
+            setupEventListeners();
+
+            // Hide loading screen
+            setTimeout(() => {
+                ui.setLoading(false);
+            }, 500);
+        }
+
+        async function loadNations() {
+            try {
+                const nations = await nationManager.getAllNations();
+                for (const nation of nations) {
+                    // Track owned territories
+                    if (nation.claimed_territories) {
+                        nation.claimed_territories.forEach(t => window.game.ownedTerritories.add(t));
+                    }
+
+                    if (nation.territory_center) {
+                        window.game.globe.addNationMarker(
+                            nation.territory_center.lat,
+                            nation.territory_center.lon,
+                            nation.flag_url || 'https://via.placeholder.com/64x40/333/fff?text=Flag',
+                            nation.name,
+                            nation.id
+                        );
+
+                        // Highlight owned territory on globe
+                        const color = nationManager.getNationColor(nation);
+                        if (nation.claimed_territories) {
+                            nation.claimed_territories.forEach(territory => {
+                                window.game.globe.setCountryOwner(territory, nation.id, parseInt(color.replace('#', '0x')));
+                            });
+                        }
+                    }
+                }
+
+                // Load world rankings
+                await loadWorldRankings();
+                await loadSecurityCouncil();
+            } catch (error) {
+                console.error('Failed to load nations:', error);
+            }
+        }
+
+        async function loadWorldRankings() {
+            try {
+                const rankings = await nationManager.getRankings('gdp', 10);
+                const container = document.getElementById('world-rankings');
+                if (container && rankings.length > 0) {
+                    container.innerHTML = rankings.map((nation, index) => `
+                        <div class="nation-row" onclick="showNationDetails('${nation.id}')">
+                            <span style="font-weight: 600; color: var(--primary-gold); width: 20px;">#${index + 1}</span>
+                            <img src="${nation.flag_url || 'https://via.placeholder.com/28x18/333/fff'}" alt="Flag">
+                            <span class="nation-name">${nation.name}</span>
+                            <span class="nation-power">${(nation.gdp || 0).toLocaleString()}</span>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error('Failed to load rankings:', e);
+            }
+        }
+
+        async function loadSecurityCouncil() {
+            try {
+                const council = await politics.getSecurityCouncil();
+                const container = document.getElementById('security-council');
+                if (container && council.length > 0) {
+                    container.innerHTML = council.map((nation, index) => `
+                        <div class="nation-row" onclick="showNationDetails('${nation.id}')">
+                            <span style="font-size: 16px;">${index === 0 ? '👑' : '🏛️'}</span>
+                            <img src="${nation.flag_url || 'https://via.placeholder.com/28x18/333/fff'}" alt="Flag">
+                            <span class="nation-name">${nation.name}</span>
+                            ${index === 0 ? '<span style="font-size: 10px; color: var(--primary-gold);">CHAIR</span>' : ''}
+                        </div>
+                    `).join('');
+                } else if (container) {
+                    container.innerHTML = '<p style="color: var(--text-muted); font-size: 12px; text-align: center;">No nations yet</p>';
+                }
+            } catch (e) {
+                console.error('Failed to load security council:', e);
+            }
+        }
+
+        async function handleLoggedIn() {
+            const user = auth.getUser();
+            const nation = await auth.loadNation();
+
+            // Update login button to user info
+            document.getElementById('quick-stats').innerHTML = `
+                <div class="user-info">
+                    <span style="color: var(--text-secondary);">Logged in</span>
+                </div>
+            `;
+
+            // Show resources HUD
+            document.getElementById('hud-resources').style.display = 'flex';
+
+            if (nation) {
+                // Show nation info in sidebar
+                showNationInfo(nation);
+                updateResourceDisplay(nation);
+            } else {
+                // Prompt to create nation
+                showCreateNationWizard();
+            }
+        }
+
+        function showNationInfo(nation) {
+            const infoEl = document.getElementById('nation-info');
+            infoEl.style.display = 'block';
+            document.getElementById('my-flag').src = nation.flag_url || '';
+            document.getElementById('my-nation-name').textContent = nation.name;
+
+            const systemName = {
+                'democracy': 'Democracy',
+                'dictatorship': 'Dictatorship',
+                'socialist': 'Socialist Republic'
+            };
+            document.getElementById('my-nation-system').textContent = systemName[nation.political_system] || nation.political_system;
+        }
+
+        async function updateResourceDisplay(nation) {
+            document.getElementById('res-treasury').textContent = nation.treasury?.toLocaleString() || '0';
+
+            try {
+                const resources = await economy.getNationResources(nation.id);
+                for (const res of resources) {
+                    const el = document.getElementById(`res-${res.resource_type}`);
+                    if (el) {
+                        el.textContent = res.amount?.toLocaleString() || '0';
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load resources:', e);
+            }
+        }
+
+        function showCreateNationWizard() {
+            const content = renderNationCreationWizard();
+            document.getElementById('nation-wizard-content').innerHTML = content;
+            document.getElementById('modal-create-nation').classList.add('active');
+
+            setupWizardListeners();
+        }
+
+        function renderNationCreationWizard() {
+            const traits = CONFIG.TRAITS;
+            const systems = CONFIG.POLITICAL_SYSTEMS;
+
+            return `
+                <div class="wizard-steps">
+                    <div class="wizard-step active" data-step="1">
+                        <span class="step-number">1</span>
+                        <span class="step-label">Info</span>
+                    </div>
+                    <div class="wizard-step" data-step="2">
+                        <span class="step-number">2</span>
+                        <span class="step-label">Traits</span>
+                    </div>
+                    <div class="wizard-step" data-step="3">
+                        <span class="step-number">3</span>
+                        <span class="step-label">System</span>
+                    </div>
+                    <div class="wizard-step" data-step="4">
+                        <span class="step-number">4</span>
+                        <span class="step-label">Territory</span>
+                    </div>
+                </div>
+                
+                <div class="wizard-content">
+                    <!-- Step 1: Basic Info -->
+                    <div class="wizard-page active" data-page="1">
+                        <div class="form-group">
+                            <label>Nation Name</label>
+                            <input type="text" class="form-input" id="nation-name" placeholder="e.g., Republic of Nova" maxlength="30">
+                        </div>
+                        <div class="form-group">
+                            <label>Motto</label>
+                            <input type="text" class="form-input" id="nation-motto" placeholder="e.g., Unity Through Strength" maxlength="50">
+                        </div>
+                        <div class="form-group">
+                            <label>Currency</label>
+                            <input type="text" class="form-input" id="nation-currency" placeholder="e.g., Novad" maxlength="20">
+                        </div>
+                        <div class="form-group">
+                            <label>Flag</label>
+                            <div class="flag-upload">
+                                <input type="hidden" id="flag-url-input">
+                                <div class="flag-preview" id="flag-preview">
+                                    <span>Click Select Flag</span>
+                                </div>
+                                <button class="btn btn-secondary" style="width: 100%; margin-top: 8px; font-size: 12px;" id="btn-select-flag">
+                                    🏳️ Select Flag
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Geopolitical Traits -->
+                    <div class="wizard-page" data-page="2">
+                        <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">
+                            Choose your nation's geographic advantage:
+                        </p>
+                        <div class="trait-grid">
+                            ${Object.entries(traits).map(([key, trait]) => `
+                                <label class="trait-option">
+                                    <input type="radio" name="trait" value="${trait.id}">
+                                    <div class="trait-icon">${trait.icon}</div>
+                                    <div class="trait-name">${trait.id === 'peninsula' ? 'Peninsula' : trait.id === 'landlocked' ? 'Landlocked' : 'Resource Rich'}</div>
+                                    <div class="trait-desc">${trait.id === 'peninsula' ? 'Sea trade +20%, Navy -15% cost' : trait.id === 'landlocked' ? 'Land logistics +30%, Resources +10%' : 'Resource deposits +50%'}</div>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Political System -->
+                    <div class="wizard-page" data-page="3">
+                        <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">
+                            Choose your government type:
+                        </p>
+                        <div class="trait-grid">
+                            ${Object.entries(systems).map(([key, system]) => `
+                                <label class="trait-option">
+                                    <input type="radio" name="system" value="${system.id}">
+                                    <div class="trait-icon">${system.icon}</div>
+                                    <div class="trait-name">${system.id === 'democracy' ? 'Democracy' : system.id === 'dictatorship' ? 'Dictatorship' : 'Socialist'}</div>
+                                    <div class="trait-bonus" style="color: var(--accent-green); font-size: 10px;">
+                                        ${system.id === 'democracy' ? '+ Efficiency, Research' : system.id === 'dictatorship' ? '+ Military, Instant War' : '+ Treasury, Projects'}
+                                    </div>
+                                    <div class="trait-penalty" style="color: var(--accent-red); font-size: 10px;">
+                                        ${system.id === 'democracy' ? '- Slow decisions' : system.id === 'dictatorship' ? '- Sanctions, Coup risk' : '- Low wages, Brain drain'}
+                                    </div>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Territory Selection -->
+                    <div class="wizard-page" data-page="4">
+                        <p style="margin-bottom: 12px; color: var(--text-secondary); font-size: 13px;">
+                            Click on the globe to select your starting territory:
+                        </p>
+                        <div class="selected-territory" id="selected-territory">
+                            <span style="color: var(--text-muted);">No territory selected</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setupWizardListeners() {
+            // Flag selection
+            const btnSelectFlag = document.getElementById('btn-select-flag');
+            const flagPreview = document.getElementById('flag-preview');
+            const flagModal = document.getElementById('modal-flag-selection');
+
+            // Open flag selector
+            if (btnSelectFlag) {
+                btnSelectFlag.addEventListener('click', () => {
+                    document.getElementById('flag-selector-content').innerHTML = ui.renderFlagSelector();
+                    flagModal.classList.add('active');
+
+                    // Setup search listener
+                    const searchInput = document.getElementById('flag-search-input');
+                    if (searchInput) {
+                        searchInput.addEventListener('input', (e) => {
+                            const query = e.target.value;
+                            const filtered = ui.filterFlags(query);
+                            document.getElementById('flag-grid-container').innerHTML = ui.renderFlagGrid(filtered);
+                            setupFlagItemListeners();
+                        });
+                    }
+
+                    setupFlagItemListeners();
+                });
+            }
+
+            function setupFlagItemListeners() {
+                document.querySelectorAll('.flag-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const url = item.dataset.url;
+                        const name = item.dataset.name;
+
+                        // Set flag
+                        window.game.nationData.flagUrl = url; // Use flagUrl, remove file upload logic if needed
+
+                        // Update preview
+                        if (flagPreview) {
+                            flagPreview.innerHTML = `<img src="${url}" alt="${name}">`;
+                        }
+
+                        // Close modal
+                        flagModal.classList.remove('active');
+                    });
+                });
+            }
+
+            // Trait selection
+            document.querySelectorAll('.trait-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    const input = option.querySelector('input');
+                    if (input) {
+                        // Deselect siblings
+                        document.querySelectorAll(`input[name="${input.name}"]`).forEach(i => {
+                            i.closest('.trait-option')?.classList.remove('selected');
+                        });
+                        option.classList.add('selected');
+                        input.checked = true;
+
+                        // Store selection
+                        window.game.nationData[input.name] = input.value;
+                    }
+                });
+            });
+        }
+
+        function setupEventListeners() {
+            // Navigation buttons (both desktop and mobile)
+            const allNavBtns = document.querySelectorAll('.nav-btn, .mobile-nav-btn');
+            allNavBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Update active state
+                    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+
+                    // Activate both desktop and mobile versions
+                    const panel = btn.dataset.panel;
+                    document.querySelectorAll(`[data-panel="${panel}"]`).forEach(b => b.classList.add('active'));
+
+                    if (panel !== 'map' && panel !== 'profile') {
+                        ui.openPanel(`panel-${panel}`);
+                    } else {
+                        ui.closePanel();
+                    }
+                });
+            });
+
+            // Panel close buttons
+            document.querySelectorAll('.panel-close').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    ui.closePanel();
+                    // Reset nav to map
+                    document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('[data-panel="map"]').forEach(b => b.classList.add('active'));
+                });
+            });
+
+            // Globe controls
+            document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
+                if (window.game.globe?.camera) {
+                    window.game.globe.camera.position.z = Math.max(1.5, window.game.globe.camera.position.z - 0.5);
+                }
+            });
+
+            document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
+                if (window.game.globe?.camera) {
+                    window.game.globe.camera.position.z = Math.min(5, window.game.globe.camera.position.z + 0.5);
+                }
+            });
+
+            document.getElementById('btn-reset-view')?.addEventListener('click', () => {
+                if (window.game.globe?.camera) {
+                    window.game.globe.camera.position.set(0, 0, 3);
+                }
+            });
+
+            // Globe events - Country click
+            window.addEventListener('globe:countryClick', async (e) => {
+                const { country } = e.detail;
+                console.log('Main: Country clicked:', country, 'Step:', window.game.wizardStep); // DEBUG log
+
+                window.game.selectedCountry = country;
+
+                // If in wizard step 4, select territory
+                if (window.game.wizardStep === 4) {
+                    console.log('Main: Processing territory selection for', country); // DEBUG log
+                    const territoryEl = document.getElementById('selected-territory');
+                    if (territoryEl) {
+                        // Check if already owned
+                        if (window.game.ownedTerritories.has(country)) {
+                            ui.notify('This territory is already claimed!', 'error');
+                            return;
+                        }
+
+                        territoryEl.classList.add('has-selection');
+                        territoryEl.innerHTML = `
+                            <div class="territory-name">${country}</div>
+                            <p style="color: var(--accent-green); font-size: 12px; margin-top: 6px;">✓ Territory selected</p>
+                        `;
+                        window.game.nationData.territory = country;
+
+                        // Highlight on globe
+                        if (window.game.globe && window.game.globe.highlightCountry) {
+                            window.game.globe.highlightCountry(country, 0xc9a227);
+                        } else {
+                            console.warn('Globe highlight function missing');
+                        }
+                    } else {
+                        console.error('selected-territory element not found!');
+                    }
+                } else if (window.game.ownedTerritories.has(country)) {
+                    // Only show nation details if territory is owned
+                    // Find which nation owns this territory
+                    ui.notify(`Clicked: ${country}`, 'info');
+                }
+            });
+
+            window.addEventListener('globe:nationClick', async (e) => {
+                const { nationId, nationName } = e.detail;
+                showNationDetails(nationId);
+            });
+
+            // Globe hover - ONLY show tooltip for owned territories
+            window.addEventListener('globe:hover', (e) => {
+                const { lat, lon, screenX, screenY } = e.detail;
+                const country = window.game.globe?.findCountryAtPoint(lat, lon);
+
+                // Only show tooltip if territory is owned by someone
+                if (country && window.game.ownedTerritories.has(country)) {
+                    ui.showTooltip(screenX, screenY, `
+                        <h4>${country}</h4>
+                        <p>Claimed territory</p>
+                    `);
+                } else {
+                    ui.hideTooltip();
+                }
+            });
+
+            // Wizard navigation
+            document.getElementById('wizard-next')?.addEventListener('click', nextWizardStep);
+            document.getElementById('wizard-prev')?.addEventListener('click', prevWizardStep);
+
+            // Auth events
+            window.addEventListener('auth:signin', () => handleLoggedIn());
+            window.addEventListener('auth:signout', () => location.reload());
+
+            // World Assembly button
+            document.getElementById('btn-world-assembly')?.addEventListener('click', () => {
+                document.getElementById('modal-world-assembly').classList.add('active');
+            });
+        }
+
+        function nextWizardStep() {
+            const currentStep = window.game.wizardStep;
+
+            // Validate current step
+            if (currentStep === 1) {
+                const name = document.getElementById('nation-name')?.value;
+                if (!name || name.length < 2) {
+                    ui.notify('Please enter a valid nation name', 'error');
+                    return;
+                }
+                window.game.nationData.name = name;
+                window.game.nationData.motto = document.getElementById('nation-motto')?.value;
+                window.game.nationData.currencyName = document.getElementById('nation-currency')?.value || 'Sover';
+            }
+
+            if (currentStep === 4) {
+                // Final step - create nation
+                if (!window.game.nationData.territory) {
+                    ui.notify('Please select a territory on the globe', 'error');
+                    return;
+                }
+                createNation();
+                return;
+            }
+
+            // Move to next step
+            window.game.wizardStep++;
+            updateWizardUI();
+
+            // On step 4, enable territory selection mode (minimize modal)
+            if (window.game.wizardStep === 4) {
+                document.getElementById('modal-create-nation').classList.add('territory-selection-mode');
+            }
+        }
+
+        function prevWizardStep() {
+            if (window.game.wizardStep > 1) {
+                // Remove territory selection mode if going back from step 4
+                if (window.game.wizardStep === 4) {
+                    document.getElementById('modal-create-nation').classList.remove('territory-selection-mode');
+                }
+                window.game.wizardStep--;
+                updateWizardUI();
+            }
+        }
+
+        function updateWizardUI() {
+            const step = window.game.wizardStep;
+
+            // Update step indicators
+            document.querySelectorAll('.wizard-step').forEach((el, i) => {
+                el.classList.remove('active', 'completed');
+                if (i + 1 === step) el.classList.add('active');
+                if (i + 1 < step) el.classList.add('completed');
+            });
+
+            // Show correct page
+            document.querySelectorAll('.wizard-page').forEach((page, i) => {
+                page.classList.toggle('active', i + 1 === step);
+            });
+
+            // Update buttons
+            document.getElementById('wizard-prev').style.display = step > 1 ? 'block' : 'none';
+            document.getElementById('wizard-next').textContent = step === 4 ? 'Create Nation' : 'Next →';
+        }
+
+        async function createNation() {
+            const data = window.game.nationData;
+
+            try {
+                ui.notify('Creating your nation...', 'info');
+
+                // Get approximate center of selected country
+                const centerCoords = { lat: 37.5, lon: 127 }; // Default, would calculate from country
+
+                const nation = await nationManager.createNation({
+                    name: data.name,
+                    motto: data.motto,
+                    currencyName: data.currencyName,
+                    flagUrl: data.flagUrl, // Passed directly now
+                    politicalSystem: data.system || 'democracy',
+                    geopoliticalTrait: data.trait || 'peninsula',
+                    nationalBonus: 'financial_hub',
+                    territoryGeoJson: null,
+                    territoryCenter: centerCoords
+                });
+
+                // Claim territory
+                if (data.territory) {
+                    await nationManager.claimTerritory(nation.id, data.territory, null, centerCoords);
+                }
+
+                document.getElementById('modal-create-nation').classList.remove('active', 'territory-selection-mode');
+                ui.notify(`${nation.name} has been founded!`, 'success', 5000);
+
+                showNationInfo(nation);
+                updateResourceDisplay(nation);
+
+                // Reload to show new nation
+                setTimeout(() => location.reload(), 1500);
+
+            } catch (error) {
+                ui.notify(`Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function showNationDetails(nationId) {
+            try {
+                const nation = await nationManager.getNation(nationId);
+
+                document.getElementById('detail-nation-name').textContent = nation.name;
+                document.getElementById('detail-flag').src = nation.flag_url || '';
+
+                document.getElementById('detail-stats').innerHTML = `
+                    <div class="stat-item">
+                        <div class="stat-value">${(nation.gdp || 0).toLocaleString()}</div>
+                        <div class="stat-label">GDP</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${nation.stability || 0}%</div>
+                        <div class="stat-label">Stability</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${nation.population || 1}</div>
+                        <div class="stat-label">Citizens</div>
+                    </div>
+                `;
+
+                // Diplomatic options based on relationship
+                const myNation = auth.getNation();
+                let actionsHtml = '';
+
+                if (myNation && myNation.id !== nation.id) {
+                    actionsHtml = `
+                        <button class="diplomacy-btn" onclick="proposeTreaty('${nation.id}')">📜 Treaty</button>
+                        <button class="diplomacy-btn" onclick="proposeTrade('${nation.id}')">💱 Trade</button>
+                        <button class="diplomacy-btn" onclick="proposeAlliance('${nation.id}')">🤝 Alliance</button>
+                        <button class="diplomacy-btn" onclick="sendMessage('${nation.id}')">✉️ Message</button>
+                        <button class="diplomacy-btn" onclick="spyOn('${nation.id}')">🕵️ Intel</button>
+                        <button class="diplomacy-btn danger" onclick="declareWar('${nation.id}')">⚔️ War</button>
+                    `;
+                }
+
+                document.getElementById('detail-actions').innerHTML = actionsHtml;
+                document.getElementById('modal-nation-details').classList.add('active');
+
+            } catch (error) {
+                ui.notify('Failed to load nation details', 'error');
+            }
+        }
+
+        // Global functions for onclick handlers
+        window.showNationDetails = showNationDetails;
+
+        window.proposeTreaty = async (nationId) => {
+            ui.notify('Treaty proposal sent!', 'success');
+            document.getElementById('modal-nation-details').classList.remove('active');
+        };
+
+        window.proposeTrade = async (nationId) => {
+            ui.notify('Opening trade negotiation...', 'info');
+        };
+
+        window.proposeAlliance = async (nationId) => {
+            ui.notify('Alliance proposal sent!', 'success');
+            document.getElementById('modal-nation-details').classList.remove('active');
+        };
+
+        window.sendMessage = async (nationId) => {
+            ui.notify('Messaging coming soon', 'info');
+        };
+
+        window.spyOn = async (nationId) => {
+            ui.notify('Espionage requires Espionage technology', 'warning');
+        };
+
+        window.declareWar = async (nationId) => {
+            if (confirm('Are you sure you want to declare war? This will have serious diplomatic consequences.')) {
+                ui.notify('War declared!', 'warning', 5000);
+                document.getElementById('modal-nation-details').classList.remove('active');
+            }
+        };
+
+        // Start the game
+        init();
+    </script>
+</body>
+
+</html>
